@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: monitor_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monitor_network
+
+  app:
+    build: .
+    environment:
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASS: password
+      DB_NAME: monitor_db
+    depends_on:
+      - db
+    networks:
+      - monitor_network
+    command: ["sh", "-c", "while true; do /usr/local/bin/system_monitor.sh; sleep 60; done"]
+
+volumes:
+  postgres_data:
+
+networks:
+  monitor_network:
