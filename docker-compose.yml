@@ -1,0 +1,102 @@
+version: '3.8'
+
+# Сеть для всех контейнеров
+networks:
+  devops-network:
+    driver: bridge
+    name: devops-lab
+
+services:
+  # Ansible мастер контейнер
+  ansible-master:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ansible
+    container_name: ansible-master
+    hostname: ansible-master
+    networks:
+      - devops-network
+    volumes:
+      - ./ansible:/ansible
+      - ./inventory:/inventory
+      - ansible-ssh-keys:/root/.ssh
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING=False
+    command: tail -f /dev/null
+    restart: unless-stopped
+
+  # Контейнер с nginx
+  nginx-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+    container_name: nginx-server
+    hostname: nginx-server
+    networks:
+      - devops-network
+    ports:
+      - "8080:80"
+    volumes:
+      - nginx-web-content:/var/www/html
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - app-server
+    restart: unless-stopped
+
+  # Контейнер с приложением
+  app-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+    container_name: app-server
+    hostname: app-server
+    networks:
+      - devops-network
+    expose:
+      - "8000"
+    volumes:
+      - app-code:/opt/myapp/app
+      - app-logs:/opt/myapp/logs
+    environment:
+      - DEBUG=false
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - SECRET_KEY=demo-secret-key-2024
+    restart: unless-stopped
+
+  # Вспомогательный контейнер для мониторинга
+  monitoring:
+    image: alpine:latest
+    container_name: monitoring-helper
+    hostname: monitoring-helper
+    networks:
+      - devops-network
+    command: >
+      sh -c "
+        apk add --no-cache curl bind-tools &&
+        while true; do
+          echo '=== Статус сервисов ===' &&
+          echo 'Проверка nginx...' &&
+          curl -s http://nginx-server:80 || echo '❌ nginx недоступен' &&
+          echo 'Проверка приложения...' &&
+          curl -s http://app-server:8000/health || echo '❌ приложение недоступно' &&
+          echo 'Проверка сети...' &&
+          nslookup app-server &&
+          echo '====================' &&
+          sleep 30;
+        done
+      "
+    restart: unless-stopped
+
+# Volumes для постоянного хранения данных
+volumes:
+  ansible-ssh-keys:
+    driver: local
+  nginx-web-content:
+    driver: local
+  nginx-logs:
+    driver: local
+  app-code:
+    driver: local
+  app-logs:
+    driver: local

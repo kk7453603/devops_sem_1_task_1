@@ -1,0 +1,32 @@
+---
+# Переменные по умолчанию для роли деплоя приложения
+
+# Директория приложения
+app_dir: /opt/myapp
+
+# Пользователь приложения
+app_user: myapp
+
+# Группа приложения
+app_group: myapp
+
+# Репозиторий приложения
+app_repo: https://github.com/example/myapp.git
+
+# Версия приложения (ветка/тег)
+app_version: main
+
+# Название сервиса
+app_service_name: myapp
+
+# Порт приложения
+app_port: 8000
+
+# Хост приложения
+app_host: 0.0.0.0
+
+# Конфигурация приложения
+app_config:
+  debug: false
+  secret_key: "your-secret-key-here"
+  database_url: "sqlite:///app.db"

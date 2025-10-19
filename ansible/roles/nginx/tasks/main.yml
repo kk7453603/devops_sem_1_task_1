@@ -1,0 +1,67 @@
+---
+- name: Обновить пакеты системы
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Установить необходимые пакеты
+  apt:
+    name:
+      - nginx
+      - curl
+      - wget
+    state: present
+  become: yes
+
+- name: Создать директорию для логов nginx
+  file:
+    path: /var/log/nginx
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  become: yes
+
+- name: Создать директорию для сайта
+  file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  become: yes
+
+- name: Настроить конфигурацию nginx
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/default
+  become: yes
+  notify:
+    - restart nginx
+
+- name: Включить сайт
+  file:
+    src: /etc/nginx/sites-available/default
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+  become: yes
+  notify:
+    - restart nginx
+
+- name: Запустить и включить nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Проверить статус nginx
+  systemd:
+    name: nginx
+    state: started
+  become: yes
+  register: nginx_status
+
+- name: Вывести статус nginx
+  debug:
+    msg: "Nginx статус: {{ nginx_status.status.ActiveState }}"

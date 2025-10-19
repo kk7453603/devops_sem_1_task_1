@@ -1,0 +1,64 @@
+FROM ubuntu:22.04
+
+LABEL maintainer="DevOps Lab"
+LABEL description="Ansible мастер контейнер для автоматизации деплоя"
+
+# Установка системных зависимостей
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    ansible \
+    openssh-client \
+    openssh-server \
+    python3 \
+    python3-pip \
+    curl \
+    wget \
+    vim \
+    git \
+    iputils-ping \
+    net-tools \
+    dnsutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Создание пользователя ansible
+RUN useradd -m -s /bin/bash ansible && \
+    mkdir -p /home/ansible/.ssh && \
+    chown -R ansible:ansible /home/ansible/.ssh
+
+# Настройка SSH сервера
+RUN mkdir /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    echo 'ansible:ansible' | chpasswd && \
+    echo 'root:ansible' | chpasswd
+
+# Создание директорий для Ansible
+RUN mkdir -p /ansible /inventory
+
+# Установка рабочей директории
+WORKDIR /ansible
+
+# Копирование конфигурации Ansible
+COPY ansible/ /ansible/
+COPY inventory/ /inventory/
+
+# Настройка прав доступа
+RUN chown -R ansible:ansible /ansible && \
+    chown -R ansible:ansible /inventory && \
+    chmod +x /ansible/*.sh 2>/dev/null || true
+
+# Переключение на пользователя ansible
+USER ansible
+WORKDIR /home/ansible
+
+# Создание SSH ключей для ansible пользователя
+RUN ssh-keygen -t rsa -b 2048 -f /home/ansible/.ssh/id_rsa -N ""
+
+# Возврат к root пользователю для запуска SSH
+USER root
+
+# Экспорт порта SSH
+EXPOSE 22
+
+# Запуск SSH сервиса
+CMD ["/usr/sbin/sshd", "-D"]
