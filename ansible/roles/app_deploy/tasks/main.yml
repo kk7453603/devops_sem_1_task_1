@@ -1,0 +1,93 @@
+---
+- name: Обновить пакеты системы
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Установить необходимые пакеты для приложения
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - curl
+      - wget
+      - git
+    state: present
+  become: yes
+
+- name: Создать директорию для приложения
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  become: yes
+
+- name: Создать пользователя приложения
+  user:
+    name: "{{ app_user }}"
+    system: yes
+    shell: /bin/bash
+    home: "{{ app_dir }}"
+    create_home: no
+  become: yes
+
+- name: Загрузить приложение из репозитория
+  git:
+    repo: "{{ app_repo }}"
+    dest: "{{ app_dir }}/app"
+    version: "{{ app_version | default('main') }}"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Установить зависимости Python
+  pip:
+    requirements: "{{ app_dir }}/app/requirements.txt"
+    virtualenv: "{{ app_dir }}/venv"
+    virtualenv_command: python3 -m venv
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Создать конфигурационный файл приложения
+  template:
+    src: app_config.j2
+    dest: "{{ app_dir }}/app/.env"
+    mode: '0600'
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Создать скрипт запуска приложения
+  template:
+    src: start_app.sh.j2
+    dest: "{{ app_dir }}/start_app.sh"
+    mode: '0755'
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Создать systemd сервис для приложения
+  template:
+    src: app.service.j2
+    dest: /etc/systemd/system/{{ app_service_name }}.service
+  become: yes
+  notify:
+    - reload systemd
+    - restart app
+
+- name: Включить и запустить сервис приложения
+  systemd:
+    name: "{{ app_service_name }}"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  become: yes
+
+- name: Проверить статус сервиса приложения
+  systemd:
+    name: "{{ app_service_name }}"
+  become: yes
+  register: app_status
+
+- name: Вывести статус приложения
+  debug:
+    msg: "Приложение статус: {{ app_status.status.ActiveState }}"
