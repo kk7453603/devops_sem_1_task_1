@@ -19,6 +19,7 @@ services:
     volumes:
       - ./ansible:/ansible
       - ./inventory:/inventory
+      - ./app:/app
       - ansible-ssh-keys:/root/.ssh
     environment:
       - ANSIBLE_HOST_KEY_CHECKING=False

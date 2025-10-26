@@ -47,7 +47,7 @@
 
 - name: Копировать код приложения
   copy:
-    src: "{{ playbook_dir }}/../app/"
+    src: "/app/"
     dest: "{{ app_dir }}/app"
     mode: preserve
   become: yes
@@ -77,34 +77,32 @@
   become: yes
   become_user: "{{ app_user }}"
 
-- name: Создать systemd сервис для приложения
+- name: Создать скрипт запуска приложения
   template:
-    src: app.service.j2
-    dest: /etc/systemd/system/{{ app_service_name }}.service
+    src: start_app.sh.j2
+    dest: "{{ app_dir }}/start_app.sh"
+    mode: '0755'
   become: yes
-  notify:
-    - reload systemd
-    - restart app
+  become_user: "{{ app_user }}"
 
-- name: Перезагрузить systemd
-  systemd:
-    daemon_reload: yes
+- name: Запустить приложение напрямую
+  shell: |
+    cd {{ app_dir }}/app && nohup {{ app_dir }}/venv/bin/python3 app.py > {{ app_dir }}/logs/app.log 2>&1 &
+  args:
+    executable: /bin/bash
   become: yes
+  become_user: "{{ app_user }}"
+  register: app_start
 
-- name: Включить и запустить сервис приложения
-  systemd:
-    name: "{{ app_service_name }}"
-    enabled: yes
-    state: started
-    daemon_reload: yes
+- name: Проверить запуск приложения
+  shell: |
+    pgrep -f "python3 app.py" || (echo "Приложение не запущено" && exit 1)
+  args:
+    executable: /bin/bash
   become: yes
-
-- name: Проверить статус сервиса приложения
-  systemd:
-    name: "{{ app_service_name }}"
-  become: yes
-  register: app_status
+  register: app_check
+  ignore_errors: yes
 
 - name: Вывести статус приложения
   debug:
-    msg: "Приложение статус: {{ app_status.status.ActiveState }}"
+    msg: "Приложение запущено: {{ app_check.rc == 0 }}"

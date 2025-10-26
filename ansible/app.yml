@@ -26,31 +26,6 @@
     - app_deploy
 
   tasks:
-    - name: Создать локальный репозиторий приложения
-      copy:
-        src: ../app/
-        dest: "{{ app_dir }}/app"
-        mode: preserve
-      become: yes
-      become_user: "{{ app_user }}"
-
-    - name: Установить дополнительные зависимости
-      pip:
-        requirements: "{{ app_dir }}/app/requirements.txt"
-        virtualenv: "{{ app_dir }}/venv"
-        virtualenv_command: python3 -m venv
-      become: yes
-      become_user: "{{ app_user }}"
-
-    - name: Создать директорию для логов
-      file:
-        path: "{{ app_dir }}/logs"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: '0755'
-      become: yes
-
     - name: Проверить запуск приложения
       uri:
         url: http://localhost:{{ app_port }}/health
@@ -63,13 +38,3 @@
     - name: Вывести результат проверки приложения
       debug:
         msg: "Приложение доступно: {{ app_check.status == 200 }}"
-
-    - name: Показать статус сервиса
-      systemd:
-        name: "{{ app_service_name }}"
-      become: yes
-      register: service_status
-
-    - name: Вывести статус сервиса
-      debug:
-        msg: "Статус сервиса: {{ service_status.status.ActiveState }}"

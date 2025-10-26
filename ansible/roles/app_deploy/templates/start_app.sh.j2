@@ -9,4 +9,4 @@ source {{ app_dir }}/venv/bin/activate
 cd {{ app_dir }}/app
 
 # Запустить приложение
-exec python3 app.py
+exec python3 app.py --host {{ app_host }} --port {{ app_port }}

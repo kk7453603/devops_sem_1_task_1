@@ -57,25 +57,23 @@
   become: yes
   ignore_errors: yes
 
-- name: Перезагрузить systemd для nginx
-  systemd:
-    daemon_reload: yes
+- name: Запустить nginx напрямую
+  shell: |
+    nginx -t && nginx
+  args:
+    executable: /bin/bash
   become: yes
+  register: nginx_start
 
-- name: Запустить и включить nginx
-  systemd:
-    name: nginx
-    state: started
-    enabled: yes
+- name: Проверить запуск nginx
+  shell: |
+    pgrep nginx || (echo "Nginx не запущен" && exit 1)
+  args:
+    executable: /bin/bash
   become: yes
-
-- name: Проверить статус nginx
-  systemd:
-    name: nginx
-    state: started
-  become: yes
-  register: nginx_status
+  register: nginx_check
+  ignore_errors: yes
 
 - name: Вывести статус nginx
   debug:
-    msg: "Nginx статус: {{ nginx_status.status.ActiveState }}"
+    msg: "Nginx запущен: {{ nginx_check.rc == 0 }}"

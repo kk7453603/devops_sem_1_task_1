@@ -1,11 +1,9 @@
 ---
-- name: reload systemd
-  systemd:
-    daemon_reload: yes
-  become: yes
-
 - name: restart app
-  systemd:
-    name: "{{ app_service_name }}"
-    state: restarted
+  shell: |
+    pkill -f "python3 app.py" || true
+    cd {{ app_dir }}/app && nohup {{ app_dir }}/venv/bin/python3 app.py --host {{ app_host }} --port {{ app_port }} > {{ app_dir }}/logs/app.log 2>&1 &
+  args:
+    executable: /bin/bash
   become: yes
+  become_user: "{{ app_user }}"

@@ -1,6 +1,7 @@
 ---
 - name: restart nginx
-  systemd:
-    name: nginx
-    state: restarted
+  shell: |
+    nginx -s reload || nginx
+  args:
+    executable: /bin/bash
   become: yes
