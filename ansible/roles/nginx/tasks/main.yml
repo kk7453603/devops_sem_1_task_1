@@ -2,14 +2,16 @@
 - name: Обновить пакеты системы
   apt:
     update_cache: yes
+    cache_valid_time: 3600
   become: yes
 
-- name: Установить необходимые пакеты
+- name: Установить необходимые пакеты для nginx
   apt:
     name:
       - nginx
       - curl
       - wget
+      - gettext-base
     state: present
   become: yes
 
@@ -31,7 +33,7 @@
     mode: '0755'
   become: yes
 
-- name: Настроить конфигурацию nginx
+- name: Настроить конфигурацию nginx как reverse proxy
   template:
     src: nginx.conf.j2
     dest: /etc/nginx/sites-available/default
@@ -39,7 +41,7 @@
   notify:
     - restart nginx
 
-- name: Включить сайт
+- name: Включить сайт nginx
   file:
     src: /etc/nginx/sites-available/default
     dest: /etc/nginx/sites-enabled/default
@@ -47,6 +49,18 @@
   become: yes
   notify:
     - restart nginx
+
+- name: Удалить дефолтную конфигурацию nginx
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  become: yes
+  ignore_errors: yes
+
+- name: Перезагрузить systemd для nginx
+  systemd:
+    daemon_reload: yes
+  become: yes
 
 - name: Запустить и включить nginx
   systemd:

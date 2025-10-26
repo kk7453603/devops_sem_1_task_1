@@ -262,3 +262,28 @@ curl http://localhost:8080/app/api/status
 ```
 
 **Результат:**
+
+## 🔧 Исправления
+
+Исправлена ошибка сборки Docker контейнера nginx-server:
+- ✅ Добавлен пакет `gettext-base` в Dockerfile.nginx для команды `envsubst`
+- ✅ Упрощена конфигурация nginx-server в docker-compose.yml (используется базовый образ Ubuntu)
+- ✅ Ansible теперь полностью отвечает за настройку nginx через роли
+
+**Обновленные инструкции для запуска:**
+```bash
+# 1. Сборка и запуск контейнеров (исправлено)
+docker-compose up -d  # Убрана --build, так как nginx-server теперь использует базовый образ
+
+# 2. Настройка SSH ключей
+docker-compose exec ansible-master ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N ""
+docker-compose exec ansible-master ssh-copy-id root@nginx-server
+docker-compose exec ansible-master ssh-copy-id root@app-server
+
+# 3. Запуск Ansible деплоя (исправлено)
+docker-compose exec ansible-master ansible-playbook -i /inventory/hosts /ansible/site.yml
+
+# 4. Проверка работоспособности
+curl http://localhost:8080/app/
+curl http://localhost:8080/app/api/status
+```

@@ -25,7 +25,7 @@ services:
     command: tail -f /dev/null
     restart: unless-stopped
 
-  # Контейнер с nginx
+  # Контейнер с nginx (чистый)
   nginx-server:
     build:
       context: .
@@ -36,14 +36,13 @@ services:
       - devops-network
     ports:
       - "8080:80"
+      - "2222:22"  # SSH порт для Ansible
     volumes:
       - nginx-web-content:/var/www/html
       - nginx-logs:/var/log/nginx
-    depends_on:
-      - app-server
     restart: unless-stopped
 
-  # Контейнер с приложением
+  # Контейнер с приложением (чистый)
   app-server:
     build:
       context: .
@@ -52,16 +51,12 @@ services:
     hostname: app-server
     networks:
       - devops-network
+    ports:
+      - "2223:22"  # SSH порт для Ansible
     expose:
       - "8000"
     volumes:
-      - app-code:/opt/myapp/app
       - app-logs:/opt/myapp/logs
-    environment:
-      - DEBUG=false
-      - APP_HOST=0.0.0.0
-      - APP_PORT=8000
-      - SECRET_KEY=demo-secret-key-2024
     restart: unless-stopped
 
   # Вспомогательный контейнер для мониторинга
