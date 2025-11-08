@@ -1,0 +1,314 @@
+basePath: /
+definitions:
+  models.Response_Error:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Response_OK:
+    properties:
+      status:
+        type: string
+    type: object
+  models.TaskReport:
+    properties:
+      content:
+        type: string
+      endtime:
+        type: string
+      hours:
+        type: integer
+      minutes:
+        type: integer
+      starttime:
+        type: string
+      taskname:
+        type: string
+    type: object
+  models.User:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+      passportNumber:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: myapp.local
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a time tracker server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Time Tracker API
+  version: "1.0"
+paths:
+  /add_user:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Add a new user by passport number
+      parameters:
+      - description: Passport Number
+        in: formData
+        name: passportNumber
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response_OK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Add new user
+  /delete_user:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Delete user by passport number
+      parameters:
+      - description: Passport Number
+        in: formData
+        name: passportNumber
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response_OK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Delete user
+  /edit_user:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Edit user details by passport number
+      parameters:
+      - description: Passport Number
+        in: formData
+        name: passportNumber
+        required: true
+        type: string
+      - description: Surname
+        in: formData
+        name: surname
+        type: string
+      - description: Name
+        in: formData
+        name: name
+        type: string
+      - description: Patronymic
+        in: formData
+        name: patronymic
+        type: string
+      - description: Address
+        in: formData
+        name: address
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response_OK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Edit user details
+  /get_user_tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get user tasks for a specified period
+      parameters:
+      - description: Passport Number
+        in: query
+        name: passportNumber
+        required: true
+        type: string
+      - description: Start Date
+        format: date
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End Date
+        format: date
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.TaskReport'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Get user tasks
+  /get_users:
+    get:
+      consumes:
+      - application/json
+      description: Get all users with optional filters
+      parameters:
+      - description: Passport Number
+        in: query
+        name: passportNumber
+        type: string
+      - description: Surname
+        in: query
+        name: surname
+        type: string
+      - description: Name
+        in: query
+        name: name
+        type: string
+      - description: Patronymic
+        in: query
+        name: patronymic
+        type: string
+      - description: Address
+        in: query
+        name: address
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Get all users
+  /start_user_task:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Start a new task for a user
+      parameters:
+      - description: Passport Number
+        in: formData
+        name: passportNumber
+        required: true
+        type: string
+      - description: Task Name
+        in: formData
+        name: task_name
+        required: true
+        type: string
+      - description: Content
+        in: formData
+        name: content
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response_OK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Start user task
+  /stop_user_task:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Stop an ongoing task for a user
+      parameters:
+      - description: Passport Number
+        in: formData
+        name: passportNumber
+        required: true
+        type: string
+      - description: Task Name
+        in: formData
+        name: task_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response_OK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response_Error'
+      summary: Stop user task
+swagger: "2.0"
