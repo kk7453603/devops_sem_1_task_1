@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: effective_go_app
+  repository: kirillkom/effective_go_app
   tag: "v1.0.0"
   pullPolicy: IfNotPresent
 

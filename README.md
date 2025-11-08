@@ -90,7 +90,7 @@
 
 ### Helm charts (Автоматическая установка в кластере kubernetes):
 
-1) Установить helm
+1) Установить helm и добавить в `/etc/hosts` запись `127.0.0.1 myapp.local`
 2) Установить себе ingress-controller (перед этим добавить себе container registry c ним)
 ```bash
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
