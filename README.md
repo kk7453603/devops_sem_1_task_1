@@ -88,21 +88,163 @@
 
 
 
-### Helm charts (Автоматическая установка в кластере kubernetes):
+### Helm charts (Автоматическая установка в кластере kubernetes)
 
-1) Установить helm и добавить в `/etc/hosts` запись `127.0.0.1 myapp.local`
-2) Установить себе ingress-controller (перед этим добавить себе container registry c ним)
+Обновленный Helm chart включает enterprise-grade возможности: безопасность, мониторинг, масштабируемость и автоматизацию.
+
+#### Предварительные требования
+
+- Kubernetes кластер (1.19+)
+- Helm 3.x
+- kubectl
+- (Опционально) Prometheus Operator для мониторинга
+
+#### Подготовка кластера
+
+1. **Установите Helm** (если не установлен)
+2. **Добавьте запись в /etc/hosts**:
+   ```bash
+   echo "127.0.0.1 myapp.local" | sudo tee -a /etc/hosts
+   ```
+
+3. **Установите Ingress Controller** (если не установлен):
+   ```bash
+   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+   helm repo update
+   helm install ingress-nginx ingress-nginx/ingress-nginx --namespace default --create-namespace
+   ```
+
+4. **(Опционально) Установите Prometheus Operator** для мониторинга:
+   ```bash
+   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+   helm repo update
+   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+   ```
+
+#### Установка приложения
+
+1. **Перейдите в директорию проекта**:
+   ```bash
+   cd /path/to/your/project
+   ```
+
+2. **Сгенерируйте values файл с сертификатами**:
+   ```bash
+   ./generate-values.sh
+   ```
+
+3. **Установите зависимости**:
+   ```bash
+   cd myapp
+   helm dependency build
+   cd ..
+   ```
+
+4. **Установите приложение**:
+   ```bash
+   helm install myapp ./myapp --namespace default -f ./myapp/values-prod.yaml
+   ```
+
+#### Проверка установки
+
 ```bash
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-helm install ingress-nginx ingress-nginx/ingress-nginx --namespace default --create-namespace
+# Проверьте статус подов
+kubectl get pods --namespace default
+
+# Проверьте сервисы
+kubectl get services --namespace default
+
+# Запустите тесты
+helm test myapp --namespace default
+
+# Проверьте доступность
+curl https://myapp.local/swagger/index.html
 ```
 
-2) Для установки
+#### Управление приложением
+
+**Обновление**:
 ```bash
-helm install myapp ./myapp --namespace default
+helm upgrade myapp ./myapp --namespace default -f ./myapp/values-prod.yaml
 ```
-3) Для удаления
+
+**Удаление**:
 ```bash
-helm delete myapp
+helm uninstall myapp --namespace default
+```
+
+#### Конфигурация
+
+##### Production настройки (values-prod.yaml)
+
+```yaml
+# Базовые настройки
+replicaCount: 2
+image:
+  tag: "v1.0.0"
+
+# TLS сертификаты (автоматически генерируются скриптом)
+tls:
+  crt: <base64-encoded-cert>
+  key: <base64-encoded-key>
+
+# Production фичи
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+
+networkPolicy:
+  enabled: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+```
+
+##### Environment-specific конфигурация
+
+Создайте отдельные файлы для разных сред:
+
+- `values-dev.yaml` - для разработки
+- `values-staging.yaml` - для тестирования
+- `values-prod.yaml` - для production
+
+#### Возможности обновленного Helm chart
+
+- ✅ **Безопасность**: Kubernetes секреты, RBAC, NetworkPolicy
+- ✅ **Масштабируемость**: HPA, resource limits, affinity rules
+- ✅ **Надежность**: Health checks, persistence, automated backups
+- ✅ **Мониторинг**: Prometheus ServiceMonitor, метрики
+- ✅ **Конфигурация**: ConfigMaps, environment variables
+- ✅ **CI/CD**: Production-ready с Helm best practices
+
+#### Troubleshooting
+
+**Проблема**: `Error: INSTALLATION FAILED: unable to build kubernetes objects`
+
+**Решение**: Убедитесь, что сертификаты правильно закодированы в base64:
+```bash
+./generate-values.sh
+```
+
+**Проблема**: `Error: INSTALLATION FAILED: Secret "tls" exists`
+
+**Решение**: Очистите старые ресурсы:
+```bash
+kubectl delete secrets --selector app.kubernetes.io/name=myapp --namespace default
+kubectl delete pvc --selector app.kubernetes.io/name=myapp --namespace default
+```
+
+**Проблема**: Приложение не запускается
+
+**Решение**: Проверьте логи:
+```bash
+kubectl logs -l app=myapp --namespace default
+kubectl describe pod <pod-name> --namespace default
 ```
