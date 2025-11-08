@@ -11,5 +11,34 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "myapp.fullname" . }}:{{ .Values.service.port }}']
+      args: ['--no-check-certificate', '--quiet', '--tries=1', '--spider', '{{ include "myapp.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never
+---
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "myapp.fullname" . }}-test-postgres"
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: postgres-test
+      image: postgres:{{ .Values.postgres.image.tag }}
+      command: ['psql']
+      args: ['-h', 'postgres', '-U', '$(POSTGRES_USER)', '-d', '$(POSTGRES_DB)', '-c', 'SELECT 1;']
+      env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "myapp.fullname" . }}-postgres
+              key: POSTGRES_USER
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "myapp.fullname" . }}-postgres
+              key: POSTGRES_DB
+  restartPolicy: Never
+{{- end }}

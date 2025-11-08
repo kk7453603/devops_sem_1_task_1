@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "myapp.fullname" . }}-config
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+data:
+  DB_HOST: "postgres"
+  DB_PORT: "{{ .Values.postgres.service.port }}"
+  DB_USER: "{{ .Values.postgres.env.POSTGRES_USER }}"
+  DB_PASSWORD: "{{ .Values.postgres.env.POSTGRES_PASSWORD }}"
+  DB_NAME: "{{ .Values.postgres.env.POSTGRES_DB }}"
+  DB_MIGRATIONS_PATH: "{{ .Values.app.dbMigrationsPath | default "file://internal/migrations" }}"
+  DEBUG: "{{ .Values.app.debug | default "on" }}"
+  API_URL: "{{ .Values.app.apiUrl | default "http://localhost:8000/info" }}"
+  SERVICE_URL: "{{ .Values.app.serviceUrl | default ":8000" }}"
