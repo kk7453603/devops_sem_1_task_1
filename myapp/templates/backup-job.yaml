@@ -1,0 +1,41 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "myapp.fullname" . }}-backup
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: postgres-backup
+              image: postgres:{{ .Values.postgres.image.tag }}
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  pg_dump -h postgres -U $(POSTGRES_USER) $(POSTGRES_DB) > /backup/backup-$(date +%Y%m%d-%H%M%S).sql
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "myapp.fullname" . }}-postgres
+                      key: POSTGRES_USER
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "myapp.fullname" . }}-postgres
+                      key: POSTGRES_DB
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: {{ include "myapp.fullname" . }}-backup-pvc
+          restartPolicy: OnFailure
+{{- end }}
